@@ -7,23 +7,21 @@ def mac(pattern, filter_data):
 
     return score
 
-pattern = [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 1, 0]
-]
+def input_matrix(name):
+    print(f"{name}을 3줄 입력하세요.")
 
-cross_filter = [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 1, 0]
-]
+    matrix = []
 
-x_filter = [
-    [1, 0, 1],
-    [0, 1, 0],
-    [1, 0, 1]
-]
+    for _ in range(3):
+        row = input().split()
+        row = [float(value) for value in row]
+        matrix.append(row)
+
+    return matrix
+
+cross_filter = input_matrix("Cross 필터")
+x_filter = input_matrix("X 필터")
+pattern = input_matrix("패턴")
 
 cross_score = mac(pattern, cross_filter)
 x_score = mac(pattern, x_filter)
