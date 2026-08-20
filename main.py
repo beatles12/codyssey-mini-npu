@@ -1,4 +1,5 @@
 import time
+import json
 
 # ==========================================================
 # [0] 설정값
@@ -31,7 +32,45 @@ def decide(score_a, score_b, label_a, label_b, tie_text):
 
 
 # ==========================================================
-# [3] 사용자 입력 (3x3)
+# [3] 라벨 정규화
+# ==========================================================
+def normalize_label(raw):
+    text = str(raw).strip().lower()
+    if text == "+" or text == "cross":
+        return "Cross"
+    elif text == "x":
+        return "X"
+    else:
+        return None
+
+
+# ==========================================================
+# [4] 데이터 로드
+# ==========================================================
+def load_data(path="data.json"):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"오류: {path} 파일을 찾을 수 없습니다.")
+        return None
+    except json.JSONDecodeError:
+        print(f"오류: {path} 파일 형식이 올바르지 않습니다.")
+        return None
+
+
+def extract_size(key):
+    parts = key.split("_")
+    if len(parts) != 3:
+        return None
+    try:
+        return int(parts[1])
+    except ValueError:
+        return None
+
+
+# ==========================================================
+# [5] 사용자 입력
 # ==========================================================
 def input_matrix(name, size):
     print(f"{name} ({size}줄 입력, 공백 구분)")
@@ -56,7 +95,7 @@ def input_matrix(name, size):
 
 
 # ==========================================================
-# [4] 성능 측정
+# [6] 성능 측정
 # ==========================================================
 def measure(pattern, filter_data):
     total_time = 0.0
@@ -69,7 +108,7 @@ def measure(pattern, filter_data):
 
 
 # ==========================================================
-# [5] 모드 1
+# [7] 모드 1 — 사용자 입력 (3x3)
 # ==========================================================
 def mode1():
     print("\n#----------------------------------------")
@@ -106,7 +145,14 @@ def mode1():
 
 
 # ==========================================================
-# [6] 메인
+# [8] 모드 2 — data.json 분석
+# ==========================================================
+def mode2():
+    print("(모드 2는 다음 단계에서 구현합니다)")
+
+
+# ==========================================================
+# [9] 메인
 # ==========================================================
 def main():
     print("=== Mini NPU Simulator ===\n")
@@ -118,9 +164,10 @@ def main():
     if choice == "1":
         mode1()
     elif choice == "2":
-        print("(모드 2는 다음 단계에서 구현합니다)")
+        mode2()
     else:
         print("잘못된 선택입니다. 1 또는 2를 입력하세요.")
 
 
-main()
+if __name__ == "__main__":
+    main()
