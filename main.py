@@ -148,7 +148,119 @@ def mode1():
 # [8] 모드 2 — data.json 분석
 # ==========================================================
 def mode2():
-    print("(모드 2는 다음 단계에서 구현합니다)")
+    data = load_data()
+    if data is None:
+        return
+
+    filters = data.get("filters", {})
+    patterns = data.get("patterns", {})
+
+    # ----- [1] 필터 로드 -----
+    print("\n#----------------------------------------")
+    print("# [1] 필터 로드")
+    print("#----------------------------------------")
+    for filter_key in filters:
+        labels = []
+        for raw_label in filters[filter_key]:
+            label = normalize_label(raw_label)
+            if label is not None:
+                labels.append(label)
+        print(f"✓ {filter_key:<8} 필터 로드 완료 ({', '.join(labels)})")
+
+    # ----- [2] 패턴 분석 -----
+    print("\n#----------------------------------------")
+    print("# [2] 패턴 분석 (라벨 정규화 적용)")
+    print("#----------------------------------------")
+
+    total = 0
+    passed = 0
+    fail_list = []
+
+    for pattern_key in patterns:
+        total += 1
+        print(f"\n--- {pattern_key} ---")
+
+        entry = patterns[pattern_key]
+        pattern = entry.get("input")
+        expected = normalize_label(entry.get("expected"))
+
+        # 검증 1: 키에서 크기 추출
+        size = extract_size(pattern_key)
+        if size is None:
+            reason = "키 형식 오류(size_N_idx 아님)"
+            print(f"FAIL: {reason}")
+            fail_list.append((pattern_key, reason))
+            continue
+
+        # 검증 2: 해당 크기 필터 존재
+        filter_key = f"size_{size}"
+        if filter_key not in filters:
+            reason = f"{filter_key} 필터 없음"
+            print(f"FAIL: {reason}")
+            fail_list.append((pattern_key, reason))
+            continue
+
+        # 검증 3: 패턴/필터 크기 일치
+        cross_filter = filters[filter_key].get("cross")
+        x_filter = filters[filter_key].get("x")
+        if len(pattern) != size or len(cross_filter) != size:
+            reason = f"크기 불일치(패턴 {len(pattern)} vs 필터 {size})"
+            print(f"FAIL: {reason}")
+            fail_list.append((pattern_key, reason))
+            continue
+
+        # 검증 4: expected 라벨 해석 가능
+        if expected is None:
+            reason = f"expected 라벨 해석 불가({entry.get('expected')})"
+            print(f"FAIL: {reason}")
+            fail_list.append((pattern_key, reason))
+            continue
+
+        # MAC 연산 및 판정
+        score_cross = mac(pattern, cross_filter)
+        score_x = mac(pattern, x_filter)
+        diff = abs(score_cross - score_x)
+        result = decide(score_cross, score_x, "Cross", "X", "UNDECIDED")
+
+        print(f"Cross 점수: {score_cross}")
+        print(f"X 점수:     {score_x}")
+
+        if result == expected:
+            passed += 1
+            print(f"판정: {result} | expected: {expected} | PASS")
+        else:
+            if result == "UNDECIDED":
+                reason = f"동점(UNDECIDED) 규칙에 따라 FAIL (|차이|={diff:.2e} < {EPSILON})"
+            else:
+                reason = f"판정({result}) != expected({expected})"
+            fail_list.append((pattern_key, reason))
+            print(f"판정: {result} | expected: {expected} | FAIL")
+            print(f"      사유: {reason}")
+
+    # ----- [3] 성능 분석 -----
+    print("\n#----------------------------------------")
+    print(f"# [3] 성능 분석 (평균/{REPEAT}회)")
+    print("#----------------------------------------")
+    print("크기        평균 시간(ms)    연산 횟수")
+    print("--------------------------------------")
+    for n in [3, 5, 13, 25]:
+        dummy = [[1.0] * n for _ in range(n)]
+        avg_ms = measure(dummy, dummy)
+        size_text = f"{n}x{n}"
+        print(f"{size_text:<12}{avg_ms:>10.4f}    {n*n:>8}")
+
+    # ----- [4] 결과 요약 -----
+    print("\n#----------------------------------------")
+    print("# [4] 결과 요약")
+    print("#----------------------------------------")
+    print(f"총 테스트: {total}개")
+    print(f"통과: {passed}개")
+    print(f"실패: {len(fail_list)}개")
+
+    if fail_list:
+        print("\n실패 케이스:")
+        for key, reason in fail_list:
+            print(f"- {key}: {reason}")
 
 
 # ==========================================================
